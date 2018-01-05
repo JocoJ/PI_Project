@@ -2,24 +2,24 @@
 #include <Windows.h>
 #include <iostream>
 
+#define SZ 16
+
 int main()
 {
-	PlainImage img;
+	PlainImage img, hist;
 	try
 	{
-		img.readImage("constructorTest.bmp");
-		PlainImage hist;
-		int len;
-		int *data = img.makeHistogram(len);
-		for (int i = 0; i < len; ++i)
+		PlainImage lena;
+		PlainImage filteredLena;
+		lena.readImage("yale.pgm");
+		if (lena.isPGM())
 		{
-			std::cout << data[i] << ' ';
+			lena.convertPGM2BMP();
 		}
-		cout << len << '\n';
-		hist.drawHistogram(data, len);
-		hist.writeImage("histogram.bmp");
-
-		img.writeImage("out.bmp");
+		FrequencySpecter specter = lena.makeFourierTransform();
+		specter.filterIdealHighPass(10);
+		filteredLena = specter.makeFourierTransform();
+		filteredLena.writeImage("filteredYale10.bmp");
 	}
 	catch (exception &e)
 	{
