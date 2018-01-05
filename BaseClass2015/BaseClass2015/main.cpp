@@ -12,16 +12,10 @@ int main()
 		PlainImage lena;
 		PlainImage filteredLena;
 		lena.readImage("yale.pgm");
-		if (lena.isPGM())
-		{
-			lena.convertPGM2BMP();
-		}
-		FrequencySpecter specter = lena.makeFourierTransform();
-		specter.filterIdealHighPass(10);
-		filteredLena = specter.makeFourierTransform();
-		filteredLena.writeImage("filteredYale10.bmp");
+		lena.convertPGM2BMP();
+		lena.writeImage("Images/img.bmp");
 	}
-	catch (exception &e)
+	catch (logic_error &e)
 	{
 		cout << e.what() << '\n';
 	}

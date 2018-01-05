@@ -1,5 +1,4 @@
 #include "PlainImage.h"
-#include "FrequencyImage.h"
 
 using namespace std;
 
@@ -115,7 +114,7 @@ void PlainImage::PGMReadParam(FILE * in, const char * format, void * param, stri
 			errstr = errstr + err;
 			if (error == EOF)
 				errstr = errstr + ", EOF";
-			throw exception(errstr.data());
+			throw logic_error(errstr.data());
 		}
 		else if (error == 0)
 		{
@@ -135,7 +134,7 @@ void PlainImage::PGMReadParam(FILE * in, const char * format, void * param, stri
 					errstr = errstr + err;
 					if (feof(in))
 						errstr = errstr + ", EOF";
-					throw exception(errstr.data());
+					throw logic_error(errstr.data());
 				}
 			}
 		}
@@ -165,7 +164,7 @@ PlainImage::PlainImage()
 }
 
 //Parameters constructor for creating a grayscale BMP image with the given data
-PlainImage::PlainImage(unsigned int width, unsigned int height, Byte * imageData)
+PlainImage::PlainImage(unsigned int width, unsigned int height, Byte * imageData, bool flip)
 {
 	if (imageData)
 	{
@@ -175,10 +174,14 @@ PlainImage::PlainImage(unsigned int width, unsigned int height, Byte * imageData
 		colorTable = header + OFFSET_TO_COLOR_TABLE;
 		image = header + offsetToImage;
 		memcpy(image, imageData, width*height * sizeof(Byte));
+		if (flip)
+		{
+			this->flipHorizontally();
+		}
 	}
 	else
 	{
-		throw exception("NULL imageData\n");
+		throw logic_error("NULL imageData\n");
 	}
 }
 
@@ -216,7 +219,7 @@ PlainImage::PlainImage(const PlainImage& original)
 		}
 		else
 		{
-			throw exception("Unknown format (How the fuck did you do that?)");
+			throw logic_error("Unknown format (How the fuck did you do that?)");
 		}
 	}
 }
@@ -277,10 +280,22 @@ void PlainImage::convertPGM2BMP()
 		header = data;
 		colorTable = header + OFFSET_TO_COLOR_TABLE;
 		image = header + this->offsetToImage;
+		flipHorizontally();
+	}
+	else
+	{
+		throw logic_error("Image is not a PGM format");
+	}
+}
+
+void PlainImage::flipHorizontally()
+{
+	if (header)
+	{
 		PlainImage &aux = *this;
-		for (int i = 0; i < height / 2; ++i)
+		for (unsigned int i = 0; i < height / 2; ++i)
 		{
-			for (int j = 0; j < width; ++j)
+			for (unsigned int j = 0; j < width; ++j)
 			{
 				Byte swap;
 				swap = aux[i][j];
@@ -288,10 +303,6 @@ void PlainImage::convertPGM2BMP()
 				aux[height - i - 1][j] = swap;
 			}
 		}
-	}
-	else
-	{
-		throw exception("Image is not a PGM format");
 	}
 }
 
@@ -308,16 +319,16 @@ void PlainImage::readImage(char* filename)
 {
 	FILE *in = nullptr;
 	if (!filename)
-		throw exception("No file given\n");
+		throw logic_error("No file given\n");
 	fopen_s(&in, filename, "rb");
 	if (!in)
-		throw exception("Couldn't open file or file couldn't be found\n");
+		throw logic_error("Couldn't open file or file couldn't be found\n");
 	fseek(in, 0, SEEK_END);
 	long int size = ftell(in);
 	if (size <= 0)
 	{
 		fclose(in);
-		throw exception("Empty file\n");
+		throw logic_error("Empty file\n");
 	}
 
 	rewind(in);
@@ -332,7 +343,7 @@ void PlainImage::readImage(char* filename)
 		if (feof(in))
 			err = err + "Reached EOF ";
 		fclose(in);
-		throw exception(err.data());
+		throw logic_error(err.data());
 	}
 	fclose(in);
 	unsigned short int signature = ((unsigned short int)data[0]<<8) | data[1];
@@ -395,7 +406,7 @@ void PlainImage::readImage(char* filename)
 	}
 	else
 	{
-		throw exception("Unknown format\nIf you are trying to open an image in PGM format, note that the first line must be the signature (\"P5\")");
+		throw logic_error("Unknown format\nIf you are trying to open an image in PGM format, note that the first line must be the signature (\"P5\")");
 	}
 }
 
@@ -406,13 +417,13 @@ void PlainImage::writeImage(char* filename)
 	int error = fopen_s(&out, filename, "wb");
 	if (error)
 	{
-		throw exception("Couldn't open the file");
+		throw logic_error("Couldn't open the file");
 	}
 	unsigned long int writeResult = (unsigned long int)fwrite(header, sizeof(Byte), length, out);
 	fclose(out);
 	if (writeResult != length)
 	{
-		throw exception("Incorrect write");
+		throw logic_error("Incorrect write");
 	}
 }
 
@@ -424,7 +435,7 @@ void PlainImage::writeImageHexFormat(char * filename)
 	int error = fopen_s(&out, filename, "w");
 	if (error)
 	{
-		throw exception("Couldn't open the file");
+		throw logic_error("Couldn't open the file");
 	}
 	for (unsigned long i = 0; i < length; ++i)
 	{
@@ -566,12 +577,12 @@ FrequencySpecter::FrequencySpecter(unsigned int width, unsigned int height, floa
 		else
 		{
 			this->specter = nullptr;
-			throw exception("width or height is 0\n");
+			throw logic_error("width or height is 0\n");
 		}
 	}
 	else
 	{
-		throw exception("Nullptr in *specter\n");
+		throw logic_error("Nullptr in *specter\n");
 	}
 }
 
@@ -656,11 +667,11 @@ void FrequencySpecter::filterButterworthHighPass(float threshold, unsigned int o
 {
 	if (specter)
 	{
-		for (int i = 0; i < height; ++i)
+		for (unsigned int i = 0; i < height; ++i)
 		{
-			for (int j = 0; j < width; ++j)
+			for (unsigned int j = 0; j < width; ++j)
 			{
-				float h = 1 / (1 + (sqrt(2) - 1)*pow((threshold / sqrt(distanceSquared(i, j))), 2 * order));
+				float h = (float)(1 / (1 + (sqrt(2) - 1)*pow((threshold / sqrt(distanceSquared(i, j))), 2 * order)));
 				specter[i * width + j] *= h;
 			}
 		}
@@ -671,11 +682,11 @@ void FrequencySpecter::filterButterworthLowPass(float threshold, unsigned int or
 {
 	if (specter)
 	{
-		for (int i = 0; i < height; ++i)
+		for (unsigned int i = 0; i < height; ++i)
 		{
-			for (int j = 0; j < width; ++j)
+			for (unsigned int j = 0; j < width; ++j)
 			{
-				float h = 1 / (1 + (sqrt(2) - 1) * pow(sqrt(distanceSquared(i, j)) / threshold, 2 * order));
+				float h = (float)(1 / (1 + (sqrt(2) - 1) * pow(sqrt(distanceSquared(i, j)) / threshold, 2 * order)));
 				specter[i*width + j] *= h;
 			}
 		}

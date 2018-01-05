@@ -43,11 +43,13 @@ private:
 public:
 	PlainImage();
 
-	PlainImage(unsigned int width, unsigned int height, Byte* imageData);
+	PlainImage(unsigned int width, unsigned int height, Byte* imageData, bool flipped = false);
 	PlainImage(const PlainImage& original);
 
 	void drawHistogram(int* data, int len, int numberOfColor = 1);
 	void convertPGM2BMP();
+
+	void flipHorizontally();
 
 	unsigned int getWidth();
 	unsigned int getHeight();
