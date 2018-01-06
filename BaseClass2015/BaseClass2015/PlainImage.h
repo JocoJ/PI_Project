@@ -44,6 +44,7 @@ public:
 	PlainImage();
 
 	PlainImage(unsigned int width, unsigned int height, Byte* imageData, bool flipped = false);
+	PlainImage(unsigned int width, unsigned int height, double* imageData, bool flipped = false);
 	PlainImage(const PlainImage& original);
 
 	void drawHistogram(int* data, int len, int numberOfColor = 1);
@@ -51,19 +52,21 @@ public:
 
 	void flipHorizontally();
 
+
 	unsigned int getWidth();
 	unsigned int getHeight();
 	unsigned short int getBitsPerPixel();
 	unsigned long getLength();
 	unsigned int getOffsetToImage();
 	Byte* imageData();
+	double* getDoubleImageData();
 
 	Byte* operator[](int index);
 	int* makeHistogram(int& length);
 
-	void readImage(char *filename);
-	void writeImage(char* filename);
-	void writeImageHexFormat(char* filename);
+	void readImage(const char *filename);
+	void writeImage(const char* filename);
+	void writeImageHexFormat(const char* filename);
 
 	bool isPGM();
 

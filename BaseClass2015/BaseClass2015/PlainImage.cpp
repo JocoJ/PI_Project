@@ -164,6 +164,7 @@ PlainImage::PlainImage()
 }
 
 //Parameters constructor for creating a grayscale BMP image with the given data
+//Makes a copy of @imageData
 PlainImage::PlainImage(unsigned int width, unsigned int height, Byte * imageData, bool flip)
 {
 	if (imageData)
@@ -182,6 +183,38 @@ PlainImage::PlainImage(unsigned int width, unsigned int height, Byte * imageData
 	else
 	{
 		throw logic_error("NULL imageData\n");
+	}
+}
+
+//Parameters constructor for creating a BMP image with double precision as input
+//Converts from double precision to Byte internally
+//No modifications are made on @imageData 
+PlainImage::PlainImage(unsigned int width, unsigned int height, double * imageData, bool flip)
+{
+	if (imageData)
+	{
+		this->width = width;
+		this->height = height;
+		header = initBMPStructure();
+		colorTable = header + OFFSET_TO_COLOR_TABLE;
+		image = header + offsetToImage;
+		for (int i = 0; i < width*height; ++i)
+		{
+			if ((Byte)(255.0 * imageData[i]) > 255)
+			{
+				delete[] header;
+				throw logic_error("PlainImage constructor: overflow");
+			}
+			image[i] = (Byte)(255.0 * imageData[i]);
+		}
+		if (flip)
+		{
+			flipHorizontally();
+		}
+	}
+	else
+	{
+		throw logic_error("PlainImage constructor: - null pointer @imageData");
 	}
 }
 
@@ -315,20 +348,20 @@ PlainImage::~PlainImage()
 }
 
 //Read an image PGM or BMP
-void PlainImage::readImage(char* filename)
+void PlainImage::readImage(const char* filename)
 {
 	FILE *in = nullptr;
 	if (!filename)
-		throw logic_error("No file given\n");
+		throw logic_error("Read image: - no file given\n");
 	fopen_s(&in, filename, "rb");
 	if (!in)
-		throw logic_error("Couldn't open file or file couldn't be found\n");
+		throw logic_error("Read image: - couldn't open file or file couldn't be found\n");
 	fseek(in, 0, SEEK_END);
 	long int size = ftell(in);
 	if (size <= 0)
 	{
 		fclose(in);
-		throw logic_error("Empty file\n");
+		throw logic_error("Read image: - empty file\n");
 	}
 
 	rewind(in);
@@ -337,7 +370,7 @@ void PlainImage::readImage(char* filename)
 	if (readResult != size)
 	{
 		delete[] data;
-		string err = "Incorrect read: ";
+		string err = "Read image: - incorrect read: ";
 		if (ferror(in))
 			err = err + "Error while reading ";
 		if (feof(in))
@@ -371,7 +404,7 @@ void PlainImage::readImage(char* filename)
 	}
 	else if (signature == PGM)			//only works with 8 bits per pixel PGM images
 	{
-		string errstr = "Incorrect read from PMG file";
+		string errstr = "Read image: - incorrect read from PGM file";
 		header = data;
 		fopen_s(&in, filename, "r");	//reopen the same file as a text file
 		fseek(in, 2, 0);				//skip over the signature
@@ -406,36 +439,36 @@ void PlainImage::readImage(char* filename)
 	}
 	else
 	{
-		throw logic_error("Unknown format\nIf you are trying to open an image in PGM format, note that the first line must be the signature (\"P5\")");
+		throw logic_error("Read image: - unknown format\nIf you are trying to open an image in PGM format, note that the first line must be the signature (\"P5\")");
 	}
 }
 
 //Writes an image to the output with @filename
-void PlainImage::writeImage(char* filename)
+void PlainImage::writeImage(const char* filename)
 {
 	FILE *out = nullptr;
 	int error = fopen_s(&out, filename, "wb");
 	if (error)
 	{
-		throw logic_error("Couldn't open the file");
+		throw logic_error("Write image: - couldn't open the file");
 	}
 	unsigned long int writeResult = (unsigned long int)fwrite(header, sizeof(Byte), length, out);
 	fclose(out);
 	if (writeResult != length)
 	{
-		throw logic_error("Incorrect write");
+		throw logic_error("Write image: - incorrect write");
 	}
 }
 
 //Writes an image in formatted hex format to a text file
 //For verifications
-void PlainImage::writeImageHexFormat(char * filename)
+void PlainImage::writeImageHexFormat(const char * filename)
 {
 	FILE *out = nullptr;
 	int error = fopen_s(&out, filename, "w");
 	if (error)
 	{
-		throw logic_error("Couldn't open the file");
+		throw logic_error("Write image hex format: - couldn't open the file");
 	}
 	for (unsigned long i = 0; i < length; ++i)
 	{
@@ -523,6 +556,23 @@ unsigned int PlainImage::getOffsetToImage()
 Byte * PlainImage::imageData()
 {
 	return image;
+}
+
+double * PlainImage::getDoubleImageData()
+{
+	if (header)
+	{
+		double* data = new double[width*height];
+		for (unsigned int i = 0; i < width*height; ++i)
+		{
+			data[i] = (double)(image[i]) / 255.0;
+		}
+		return data;
+	}
+	else
+	{
+		throw logic_error("Empty image\n");
+	}
 }
 
 Byte * PlainImage::operator[](int index)

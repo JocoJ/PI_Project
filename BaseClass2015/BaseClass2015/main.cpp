@@ -1,4 +1,5 @@
 #include "PlainImage.h"
+#include "Computations.h"
 #include <Windows.h>
 #include <iostream>
 
@@ -9,11 +10,8 @@ int main()
 	PlainImage img, hist;
 	try
 	{
-		PlainImage lena;
-		PlainImage filteredLena;
-		lena.readImage("yale.pgm");
-		lena.convertPGM2BMP();
-		lena.writeImage("Images/img.bmp");
+		PlainImage mean = makeAverageElement("myFilenames.txt", "Images/");
+		mean.writeImage("meanFace.bmp");
 	}
 	catch (logic_error &e)
 	{
