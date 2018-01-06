@@ -198,9 +198,9 @@ PlainImage::PlainImage(unsigned int width, unsigned int height, double * imageDa
 		header = initBMPStructure();
 		colorTable = header + OFFSET_TO_COLOR_TABLE;
 		image = header + offsetToImage;
-		for (int i = 0; i < width*height; ++i)
+		for (unsigned int i = 0; i < width*height; ++i)
 		{
-			if ((Byte)(255.0 * imageData[i]) > 255)
+			if ((int)(255.0 * imageData[i]) > 255)
 			{
 				delete[] header;
 				throw logic_error("PlainImage constructor: overflow");
